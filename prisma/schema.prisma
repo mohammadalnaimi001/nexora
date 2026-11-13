@@ -1,0 +1,72 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+enum Role { MEMBER ADMIN }
+enum Tier { MEMBER PREMIUM ELITE BLACK }
+enum MemberStatus { ACTIVE SUSPENDED EXPIRED }
+enum AudienceType { INDIVIDUAL BUSINESS PARTNER VIP }
+enum TransactionType { EARN REDEEM ADJUSTMENT }
+model User {
+ id String @id @default(cuid())
+ name String
+ email String @unique
+ passwordHash String
+ role Role @default(MEMBER)
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ membership Membership?
+}
+model Membership {
+ id String @id @default(cuid())
+ memberNumber String @unique
+ userId String @unique
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ tier Tier @default(MEMBER)
+ status MemberStatus @default(ACTIVE)
+ audience AudienceType @default(INDIVIDUAL)
+ pointsBalance Int @default(0)
+ qrToken String @unique
+ walletSerial String @unique
+ organization String?
+ joinedAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ transactions PointTransaction[]
+}
+model PointTransaction {
+ id String @id @default(cuid())
+ membershipId String
+ membership Membership @relation(fields:[membershipId],references:[id],onDelete:Cascade)
+ type TransactionType
+ amount Int
+ description String
+ reference String? @unique
+ createdAt DateTime @default(now())
+ createdBy String?
+}
+model Reward {
+ id String @id @default(cuid())
+ title String
+ description String
+ pointsCost Int
+ active Boolean @default(true)
+ tierMinimum Tier @default(MEMBER)
+ createdAt DateTime @default(now())
+}
+model Offer {
+ id String @id @default(cuid())
+ title String
+ description String
+ active Boolean @default(true)
+ startsAt DateTime?
+ endsAt DateTime?
+ tierTargets Tier[]
+ createdAt DateTime @default(now())
+}
+model WalletRegistration {
+ id String @id @default(cuid())
+ deviceLibraryIdentifier String
+ passTypeIdentifier String
+ serialNumber String
+ pushToken String
+ updatedAt DateTime @updatedAt
+ @@unique([deviceLibraryIdentifier,passTypeIdentifier,serialNumber])
+}
